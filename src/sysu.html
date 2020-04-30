@@ -1,0 +1,1296 @@
+<template>
+    <div class="home">
+      <div class="data-box">
+        <div class="box">
+          <div class="left-box">
+            <h3>MicroPhenoDB<span>&nbsp;&nbsp;Microbe and Disease Phenotype Association Database </span></h3>
+            <div class="sub-title">This is a database resource which collected and curated the human microbe-disease association data.</div>
+            <div class="data-tab-box">
+              <ul class="tab-a nav nav-tab">
+                <li><a href="javascript:;" v-bind:class="{'active':searchType=='microbe'}" @click="setSearchType('microbe')">Microbe</a></li>
+                <li><a href="javascript:;" v-bind:class="{'active':searchType=='disease'}" @click="setSearchType('disease')">Disease</a></li>
+                <li><a href="javascript:;" v-bind:class="{'active':searchType=='association'}" @click="setSearchType('association')">Association</a></li>
+              </ul>
+              <ul class="tab-content">
+                <li class="tab-pane active">
+                  <div class="search-box">
+                    <!-- 微生物搜索 -->
+                    <div class="search-input-btn" v-if="searchType=='microbe'">
+                      <div class="search-input">
+                        <div class="search-input-left">
+                          <input type="text" placeholder="Input a Microbe" v-model="microbeSearchData.name" @input="toGetSuggestion(microbeSearchData.name)" @blur="closeSelect()">
+                          <ul class="suggestion-box" v-if="isShowSuggestion && suggestionData.length>0">
+                            <li v-for="(item,index) in suggestionData" v-bind:key="index"><a href="#" @click.prevent="selectValue(item)">{{item}}</a></li>
+                          </ul>
+                        </div>
+                        <div class="search-input-right">
+                          <select v-model="microbeSearchData.position" id="positionId">
+                            <option value="">All sites</option>
+                            <option value="Abdominal cavity">Abdominal cavity</option>
+                            <option value="Auditory meatus">Auditory meatus</option>
+                            <option value="Biofilm">Biofilm</option>
+                            <option value="Bloodstream">Bloodstream</option>
+                            <option value="Breast">Breast</option>
+                            <option value="Central nervous system">Central nervous system</option>
+                            <option value="Cervix">Cervix</option>
+                            <option value="Eye">Eye</option>
+                            <option value="Foot">Foot</option>
+                            <option value="Gallbladder">Gallbladder</option>
+                            <option value="Gastrointestinal tract">Gastrointestinal tract</option>
+                            <option value="Genitals">Genitals</option>
+                            <option value="Lung">Lung</option>
+                            <option value="Nasal cavity">Nasal cavity</option>
+                            <option value="Oesophagus">Oesophagus</option>
+                            <option value="Oral cavity">Oral cavity</option>
+                            <option value="Placenta">Placenta</option>
+                            <option value="Respiratory tract">Respiratory tract</option>
+                            <option value="Skin and soft tissue">Skin and soft tissue</option>
+                            <option value="Throat">Throat</option>
+                            <option value="Urinary tract">Urinary tract</option>
+                            <option value="Vagina">Vagina</option>
+                            <option value="Other">Other</option>
+                          </select>
+                          <label for="positionId"></label>
+                        </div>
+                      </div>
+                      <a href="javascript:;" class="search-btn" @click="microbeSearch()">Search<i class="icon"></i></a>
+                    </div>
+                    <!-- 疾病搜索 -->
+                    <div class="search-input-btn" v-if="searchType=='disease'">
+                      <div class="search-input">
+                        <div class="search-input-left">
+                          <input type="text" placeholder="Input a Disease" v-model="diseaseSearchData.name" @input="toGetSuggestion(diseaseSearchData.name)" @blur="closeSelect()">
+                          <ul class="suggestion-box" v-if="isShowSuggestion && suggestionData.length>0">
+                            <li v-for="(item,index) in suggestionData" v-bind:key="index"><a href="#" @click.prevent="selectValue(item)">{{item}}</a></li>
+                          </ul>
+                        </div>
+                        <div class="search-input-right">
+                          <select v-model="diseaseSearchData.microbeType" id="diseaseTypeId">
+                            <option value="">All types</option>
+                            <option value="Bacteria">Bacteria</option>
+                            <option value="Chlamydia">Chlamydia</option>
+                            <option value="Ehrlichia">Ehrlichia</option>
+                            <option value="Fungus">Fungus</option>
+                            <option value="Mycoplasma">Mycoplasma</option>
+                            <option value="other">other</option>
+                            <option value="Parasite">Parasite</option>
+                            <option value="Rickettsia">Rickettsia</option>
+                            <option value="Virus">Virus</option>
+                          </select>
+                          <label for="diseaseTypeId"></label>
+                        </div>
+                      </div>
+                      <a href="javascript:;" class="search-btn" @click="diseaseSearch()">Search<i class="icon"></i></a>
+                    </div>
+                    <!-- association -->
+                    <div class="search-input-btn" v-if="searchType=='association'">
+                      <div class="search-input">
+                        <div class="search-input-left resetWidth">
+                          <input type="text" placeholder="Input a Association" v-model="associationName">
+                        </div>
+                      </div>
+                      <a href="javascript:;" class="search-btn" @click="associationSearch()">Search<i class="icon"></i></a>
+                    </div>
+                    <div class="search-tip">e.g.:
+                      <a href="#" @click.prevent="egSearch('Staphylococcus aureus')" v-if="searchType=='microbe'">Staphylococcus aureus，</a>
+                      <a href="#" @click.prevent="egSearch('Klebsiella pneumoniae')" v-if="searchType=='microbe'">Klebsiella pneumoniae</a>
+                      <a href="#" @click.prevent="egSearch('Diarrhea')" v-if="searchType=='disease'">Diarrhea，</a>
+                      <a href="#" @click.prevent="egSearch('Cystic fibrosis')" v-if="searchType=='disease'">Cystic fibrosis</a>
+                      <a href="#" @click.prevent="egSearch('MBP00000261')" v-if="searchType=='association'">MBP00000261，</a>
+                      <a href="#" @click.prevent="egSearch('MBP00003861')" v-if="searchType=='association'">MBP00003861</a>
+                    </div>
+                  </div>
+                  <div class="search-result">
+                    <h3>Data Summary</h3>
+                    <ul class="row">
+                      <li class="col-md-4">
+                        <div class="box">
+                          <span>Association</span>
+                          5529
+                          <i class="associations-icon"></i>
+                        </div>
+                      </li>
+                      <li class="col-md-4">
+                        <div class="box">
+                          <span>Microbe</span>
+                          1765
+                          <i class="microbe-icon"></i>
+                        </div>
+                      </li>
+                      <li class="col-md-4">
+                        <div class="box">
+                          <span>Disease</span>
+                          497
+                          <i class="disease-icon"></i>
+                        </div>
+                      </li>
+
+                      <li class="col-md-4">
+                        <div class="box">
+                          <span>Virulence Factor</span>
+                            4204
+                          <i class="EFO-icon"></i>
+                        </div>
+                      </li>
+
+                      <li class="col-md-4">
+                        <div class="box">
+                          <span>Core Gene</span>
+                          <p style="line-height: 2">27,277</p>
+                          <i class="gene-icon"></i>
+                        </div>
+                      </li>
+
+                      <li class="col-md-4">
+                        <div class="box">
+                          <span>Antibiotic Resistance</span>
+                            2522
+                          <i class="annotation-icon"></i>
+                        </div>
+                      </li>
+                    </ul>
+                  </div>
+                </li>
+              </ul>
+            </div>
+          </div>
+          <div class="center-box">
+            <div class="people">
+              <a href="javascript:;" class="Central_nervous_system" data-id="#Central_nervous_system" @click="gotoAssociation('Central nervous system')">中枢神经系统</a>
+              <a href="javascript:;" class="Eye" data-id="#Eye" @click="gotoAssociation('Eye')">眼睛</a>
+              <a href="javascript:;" class="Auditory_meatus" data-id="#Auditory_meatus" @click="gotoAssociation('Auditory meatus')">耳道</a>
+              <a href="javascript:;" class="Nasal_cavity" data-id="#Nasal_cavity" @click="gotoAssociation('Nasal cavity')">鼻腔</a>
+              <a href="javascript:;" class="Oral_cavity" data-id="#Oral_cavity" @click="gotoAssociation('Oral cavity')">口腔</a>
+              <a href="javascript:;" class="Oesophagus" data-id="#Oesophagus" @click="gotoAssociation('Oesophagus')">食道</a>
+              <a href="javascript:;" class="Respiratory_tract" data-id="#Respiratory_tract" @click="gotoAssociation('Respiratory tract')">呼吸道</a>
+              <a href="javascript:;" class="Throat" data-id="#Throat" @click="gotoAssociation('Throat')">咽喉</a>
+              <a href="javascript:;" class="Lung" data-id="#Lung" @click="gotoAssociation('Lung')">肺</a>
+              <a href="javascript:;" class="Gastrointestinal_tract" data-id="#Gastrointestinal_tract" @click="gotoAssociation('Gastrointestinal tract')">胃肠道</a>
+              <a href="javascript:;" class="Breast" data-id="#Breast" @click="gotoAssociation('Breast')">乳房</a>
+              <a href="javascript:;" class="Liver" data-id="#Liver" @click="gotoAssociation('Liver')">肝脏</a>
+              <a href="javascript:;" class="Gallbladder" data-id="#Gallbladder" @click="gotoAssociation('Gallbladder')">胆囊</a>
+              <a href="javascript:;" class="Abdominal_cavity" data-id="#Abdominal_cavity" @click="gotoAssociation('Abdominal cavity')">腹腔</a>
+              <a href="javascript:;" class="Placenta" data-id="#Placenta" @click="gotoAssociation('Placenta')">胎盘</a>
+              <a href="javascript:;" class="Cervix" data-id="#Cervix" @click="gotoAssociation('Cervix')">子宫颈</a>
+              <a href="javascript:;" class="Urinary_tract" data-id="#Urinary_tract" @click="gotoAssociation('Urinary tract')">泌尿道</a>
+              <a href="javascript:;" class="Vagina" data-id="#Vagina" @click="gotoAssociation('Vagina')">阴道</a>
+              <a href="javascript:;" class="Bloodstream" data-id="#Bloodstream" @click="gotoAssociation('Bloodstream')">血液</a>
+              <a href="javascript:;" class="Genitals" data-id="#Genitals" @click="gotoAssociation('Genitals')">生殖器</a>
+              <a href="javascript:;" class="Foot" data-id="#Foot" @click="gotoAssociation('Foot')">足</a>
+              <a href="javascript:;" class="Skin_and_soft_tissue" data-id="#Skin_and_soft_tissue" @click="gotoAssociation('Skin and soft tissue')">皮肤和软组织</a>
+            </div>
+          </div>
+          <div class="right-box">
+            <div class="my-chart">
+              <span class="origin">0</span>
+              <div class="x-data">
+                <ul>
+                  <li><span>100</span></li>
+                  <li><span>1000</span></li>
+                  <li><span>2000</span></li>
+                </ul>
+              </div>
+              <div class="y-data">
+                <ul>
+                  <li v-bind:id="item.id" v-for="(item,index) in listData" v-bind:key="index" v-bind:class="item.id" v-on:click="setPopup(item.position,item.num)">
+                    <div class="name">{{item.position}}</div>
+                    <div class="value"><span class="line" v-bind:title="item.num" v-bind:style="{width:item.num<=100?(item.num/100)*33+'%':33+(item.num/2000)*67+'%',opacity:item.num/2500<0.5?0.5:item.num/2500}"></span></div>
+                  </li>
+                </ul>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="intro-box">
+        <div class="box">
+          <h3>What is MicroPhenoDB?</h3>
+          <div class="content">
+            <p>&nbsp;&nbsp;&nbsp;&nbsp;MicroPhenoDB（Microbe and Disease Phenotype Association Database）is a database resource which manually collects and curates the data from the guideline of Infectious Diseases Society of America (IDSA) and the NCI pathogenic thesaurus (OBO Edition), includes microbe-disease association data from the HMDAD and Disbiome databases, and connects microbial core genes from the MetaPhlan2 dataset. A refined score model is adopted to prioritize the associations based on evidential matrix.</p>
+            <p>&nbsp;&nbsp;&nbsp;&nbsp;MicroPhenoDB allows users to browse, search, access and analyze data through user-friendly web interfaces and web service APIs. Based on the data collated in MicroPhenoDB, a sequence search web application was implemented with Bowtie and BLAST to allow users to query their own metagenomic data against the sequence data of microbial core genes, virulence factor genes and drug resistance genes. This application enables fast identification of existing pathogenic microbes without running usual metagenomic data processing and assembly.</p>
+          </div>
+        </div>
+      </div>
+      <div class="popup hide">
+        <span>{{name}}</span><br/>MicroPheno associations<br/><strong>{{num}}</strong>
+      </div>
+    </div>
+</template>
+
+<script>
+import API from './config/api.js'
+export default {
+  name: 'home',
+  data () {
+    return {
+      name: '',
+      num: 0,
+      listData: [],
+      microdbSummary: {},
+      searchType: 'microbe',
+      microbeSearchData: {
+        name: '',
+        position: ''
+      },
+      diseaseSearchData: {
+        name: '',
+        microbeType: ''
+      },
+      associationName: '',
+      suggestionData: [],
+      isShowSuggestion: false
+    }
+  },
+  created () {
+    this.loadListData()
+    this.loadMicrodbSummary()
+  },
+  methods: {
+    microbeSearch () {
+      if (this.microbeSearchData.name) {
+        this.$router.push({name: 'Search', params: { searchType: this.searchType, microbeSearchData: this.microbeSearchData}})
+      } else {
+        this.$alertify.error('Name cannot be empty')
+      }
+    },
+    diseaseSearch () {
+      if (this.diseaseSearchData.name) {
+        this.$router.push({name: 'Search', params: { searchType: this.searchType, diseaseSearchData: this.diseaseSearchData}})
+      } else {
+        this.$alertify.error('Name cannot be empty')
+      }
+    },
+    associationSearch () {
+      if (this.associationName) {
+        this.$router.push({name: 'Search', params: { searchType: this.searchType, associationName: this.associationName}})
+      } else {
+        this.$alertify.error('Name cannot be empty')
+      }
+    },
+    egSearch (value) {
+      if (this.searchType === 'microbe') {
+        this.microbeSearchData.name = value
+        this.microbeSearch()
+      } else if (this.searchType === 'disease') {
+        this.diseaseSearchData.name = value
+        this.diseaseSearch()
+      } else {
+        this.associationName = value
+        this.associationSearch()
+      }
+    },
+    setSearchType (searchType) {
+      this.searchType = searchType
+      this.microbeSearchData = {
+        name: '',
+        position: ''
+      }
+      this.diseaseSearchData = {
+        name: '',
+        microbeType: ''
+      }
+      this.associationName = ''
+    },
+    setPopup (name, num) {
+      this.name = name
+      this.num = num
+    },
+    loadListData () {
+      this.$fetch(API.associationSummary).then((response) => {
+        if (response.status === 0) {
+          this.listData = response.data
+        }
+      })
+    },
+    loadMicrodbSummary () {
+      this.$fetch(API.microdbSummary).then((response) => {
+        if (response.status === 0) {
+          this.microdbSummary = response.data
+        }
+      })
+    },
+    selectValue (name) {
+      if (this.searchType === 'microbe') {
+        this.microbeSearchData.name = name
+      } else {
+        this.diseaseSearchData.name = name
+      }
+      this.isShowSuggestion = false
+    },
+    toGetSuggestion (name) {
+      if (this.searchType === 'microbe') {
+        this.$fetch(API.microbeSuggestion + '?name=' + name).then((response) => {
+          if (response.status === 0) {
+            this.suggestionData = response.data
+            this.isShowSuggestion = true
+          }
+        })
+      } else {
+        this.$fetch(API.diseaseSuggestion + '?name=' + name).then((response) => {
+          if (response.status === 0) {
+            this.suggestionData = response.data
+            this.isShowSuggestion = true
+          }
+        })
+      }
+    },
+    closeSelect () {
+      let self = this
+      setTimeout(function () {
+        self.isShowSuggestion = false
+      }, 300)// 延迟100ms
+    },
+    gotoAssociation(position){
+      this.$router.push({path: '/associationDetail/' + position});
+    }
+  }
+}
+</script>
+
+<!-- Add "scoped" attribute to limit CSS to this component only -->
+<style scoped lang="scss">
+  .home{
+    min-height: 750px;
+    overflow-x: auto;
+    .popup{
+      width:120px;
+      position:absolute;
+      padding:6px 8px;
+      font-size:12px;
+      line-height:14px;
+      text-align:center;
+      background:#fff;
+      border-radius: 8px;
+      z-index:999;
+      box-shadow: 0 2px 4px 0 rgba(0,0,0,0.1);
+      span{
+        color:#0A897C;
+      }
+      &:after{
+        width:20px;
+        height:9px;
+        content:'';
+        display:block;
+        background:url('~@/assets/images/arrow.png') no-repeat center center;
+        position:absolute;
+        left: 50%;
+        top: -8px;
+        margin-left: -10px;
+      }
+    }
+    .data-box{
+      width: 100%;
+      margin: 0;
+      padding:30px 40px 0 40px;
+      min-height: 710px;
+      background:url('~@/assets/images/bg.png') no-repeat bottom center;
+      background-size: 100% 100%;
+      text-align: center;
+      @media screen and (max-width: 1400px){
+        padding:20px 20px 0 20px;
+      }
+      .box{
+        display: inline-block;
+        width: 100%;
+        max-width: 1920px;
+      }
+      .left-box{
+        width: 40%;
+        max-width: 650px;
+        float:left;
+        text-align: left;
+        h3{
+          font-size:22px;
+          color:#ffffff;
+          margin-bottom:5px;
+          span{
+            font-size: 15px;
+          }
+        }
+        .sub-title{
+          font-size:18px;
+          color:rgba(255, 255, 255, 0.6);
+          letter-spacing: 0.3px;
+          line-height:24px;
+          margin-bottom:38px;
+        }
+        .data-tab-box{
+          .tab-a{
+            margin-bottom:15px;
+            li{
+              padding-right:15px;
+              margin-right:15px;
+              border-right:1px solid rgba(255,255,255,.54);
+              &:last-child{
+                padding-right:0;
+                margin-right:0;
+                border-right: 0;
+              }
+              a{
+                font-size:20px;
+                line-height: 20px;
+                color:rgba(255,255,255,.54);
+                text-decoration:none;
+                &.active{
+                  color:#fff;
+                  font-weight: bold;
+                }
+              }
+            }
+          }
+          .tab-content{
+            padding:0;
+            li{
+              .search-box{
+                margin-bottom:35px;
+                .search-input-btn{
+                  margin-bottom:10px;
+                  padding-right:115px;
+                  position: relative;
+                  .search-input{
+                    width: 100%;
+                    height:36px;
+                    display:block;
+                    background:#fff;
+                    border-radius:24px;
+                    box-shadow: 0 2px 4px 0 rgba(112,48,94,0.53);
+                    padding:6px 15px;
+                    .search-input-left{
+                      width: 50%;
+                      float:left;
+                      position: relative;
+                      padding-right: 18px;
+                      &.resetWidth{
+                          width: 100%;
+                          padding-right: 0;
+                      }
+                      input{
+                        border:0;
+                        font-size:16px;
+                        line-height:24px;
+                        width:100%;
+                        outline:0;
+                      }
+                      .suggestion-box{
+                        min-width: 100%;
+                        background: #fff;
+                        position: absolute;
+                        top:30px;
+                        left:0;
+                        border:1px solid #819dd4;
+                        max-height: 442px;
+                        overflow-y:auto;
+                        z-index: 999;
+                        li{
+                          a{
+                            display: block;
+                            text-decoration: none;
+                            padding:2px 20px;
+                            color: #222;
+                            line-height: 18px;
+                            &:hover{
+                              background: #3d91ff;
+                              color:#fff;
+                            }
+                          }
+                        }
+                      }
+                    }
+                    .search-input-right{
+                      width: 50%;
+                      float:left;
+                      padding-right:10px;
+                      position: relative;
+                      select{
+                        height:24px;
+                        border:0;
+                        font-size:16px;
+                        width:100%;
+                        outline:0;
+                        appearance:none;
+                        -moz-appearance:none;
+                        -webkit-appearance:none;
+                        z-index:9;
+                        position:relative;
+                        background: none;
+                        border-left:1px solid #3B3B3B;
+                        padding-left:18px;
+                        border-radius: 0;
+                        &::-ms-expand{
+                          display: none;
+                        }
+                      }
+                      label{
+                        display: block;
+                        width: 24px;
+                        height: 24px;
+                        background:#fff url('~@/assets/images/down.1.svg') no-repeat center center;
+                        position:absolute;
+                        right:0px;
+                        top:2px;
+                      }
+                    }
+                  }
+                  .search-btn{
+                    display:block;
+                    padding:6px 5px 6px 15px;
+                    font-size:18px;
+                    color: #757575;
+                    border-radius:24px;
+                    background:#fff;
+                    box-shadow: 0 2px 4px 0 rgba(112,48,94,0.53);
+                    text-decoration:none;
+                    position: absolute;
+                    right: 0;
+                    top:0;
+                    .icon{
+                      display: inline-block;
+                      width:20px;
+                      height:20px;
+                      background: url('~@/assets/images/sousuo.svg') no-repeat left center;
+                      vertical-align: top;
+                      margin-left:5px;
+                      margin-right: 5px;
+                      margin-top:4px;
+                    }
+                  }
+                }
+                .search-tip{
+                  font-size:14px;
+                  color: rgba(255,255,255,0.78);
+                  a{
+                    font-size:14px;
+                    color: rgba(255,255,255,0.78);
+                  }
+                }
+              }
+              .search-result{
+                max-width: 650px;
+                background:#ffffff;
+                border-radius: 15px;
+                box-shadow: 0 2px 4px 0 rgba(0,0,0,0.1);
+                overflow: hidden;
+                h3{
+                  font-size:20px;
+                  line-height: 20px;
+                  padding:15px 30px;
+                  color: #0A897C;
+                  background: #edf9f7;
+                  text-align: left;
+                  margin:0;
+                  @media screen and (max-width: 1200px){
+                    padding:15px 20px;
+                  }
+                }
+                ul{
+                  width: 100%;
+                  padding:20px 0 30px 0;
+                  margin:0;
+                  li{
+                    list-style:none;
+                    text-align:left;
+                    padding:0;
+                    &:nth-child(1){
+                      padding-left:30px;
+                      @media screen and (max-width: 1200px){
+                        padding-left:20px;
+                      }
+                      .box{
+                        padding:0 40px 20px 0;
+                        border-bottom: 1px solid #7bc0b9;
+                      }
+                    }
+                    &:nth-child(2){
+                      .box{
+                        padding:0 40px 20px 20px;
+                        border-left: 1px solid #7bc0b9;
+                        border-right: 1px solid #7bc0b9;
+                        border-bottom: 1px solid #7bc0b9;
+                      }
+                    }
+                    &:nth-child(3){
+                      padding-right:30px;
+                      @media screen and (max-width: 1200px){
+                        padding-right:20px;
+                      }
+                      .box{
+                        padding:0 30px 20px 20px;
+                        border-bottom: 1px solid #7bc0b9;
+                        i{
+                          right:0;
+                        }
+                      }
+                    }
+                    &:nth-child(4){
+                      padding-left:30px;
+                      @media screen and (max-width: 1200px){
+                        padding-left:20px;
+                      }
+                      .box{
+                        padding:20px 40px 0 0;
+                        i{
+                          top:37px;
+                        }
+                      }
+                    }
+                    &:nth-child(5){
+                      .box{
+                        padding:20px 40px 0 20px;
+                        border-left: 1px solid #7bc0b9;
+                        border-right: 1px solid #7bc0b9;
+                        i{
+                          top:37px;
+                        }
+                      }
+                    }
+                    &:nth-child(6){
+                      padding-right:30px;
+                      @media screen and (max-width: 1200px){
+                        padding-right:20px;
+                      }
+                      .box{
+                        padding:20px 30px 0 20px;
+                        i{
+                          top:32px;
+                          right:0;
+                        }
+                      }
+                    }
+                    .box{
+                      min-width:100px;
+                      font-size: 24px;
+                      line-height: 28px;
+                      color: #0A897C;
+                      display:inline-block;
+                      font-family: Roboto-Medium;
+                      position:relative;
+                      span{
+                        display:block;
+                        font-size:16px;
+                        color: rgba(0,0,0,0.78);
+                        margin-bottom: 5px;
+                      }
+                      i{
+                        width:30px;
+                        height: 30px;
+                        display:block;
+                        position: absolute;
+                        right:10px;
+                        top:20px;
+                        &.associations-icon{
+                          background: url('~@/assets/images/Associations.svg') no-repeat center center;
+                          background-size: 100%;
+                        }
+                        &.microbe-icon{
+                          background: url('~@/assets/images/Microbe.svg') no-repeat center center;
+                          background-size: 100%;
+                        }
+                        &.disease-icon{
+                          background: url('~@/assets/images/Disease2.svg') no-repeat center center;
+                          background-size: 100%;
+                        }
+                        &.EFO-icon{
+                          background: url('~@/assets/images/EFO.svg') no-repeat center center;
+                          background-size: 100%;
+                        }
+                        &.gene-icon{
+                          background: url('~@/assets/images/Core_Gene.svg') no-repeat center center;
+                          background-size: 100%;
+                        }
+                        &.annotation-icon{
+                          background: url('~@/assets/images/Annotation.svg') no-repeat center center;
+                          background-size: 100%;
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+      .center-box{
+        width: 30%;
+        min-width:284px;
+        text-align: left;
+        float:left;
+        .people{
+          width:284px;
+          height:608px;
+          background:url('~@/assets/images/people/people.png') no-repeat center center;
+          margin:0 auto;
+          position:relative;
+          z-index:9;
+          a{
+            display:block;
+            position:absolute;
+            font-size:0;
+            margin:0;
+            display:block;
+            &.Central_nervous_system{
+              width:43px;
+              height:34px;
+              right: 180px;
+              top: 15px;
+              &:hover,&.hover{
+                background:url('~@/assets/images/people/Central_nervous_system.svg') no-repeat center center;
+              }
+            }
+            &.Eye{
+              width:12px;
+              height:12px;
+              right: 185px;
+              top: 36px;
+              &:hover,&.hover{
+                background:url('~@/assets/images/people/Eye.svg') no-repeat center center;
+              }
+            }
+            &.Auditory_meatus{
+              width:12px;
+              height:12px;
+              right: 174px;
+              top: 50px;
+              &:hover,&.hover{
+                background:url('~@/assets/images/people/Auditory_meatus.svg') no-repeat center center;
+              }
+            }
+            &.Nasal_cavity{
+              width:12px;
+              height:12px;
+              right: 194px;
+              top: 58px;
+              &:hover,&.hover{
+                background:url('~@/assets/images/people/Nasal_cavity.svg') no-repeat center center;
+              }
+            }
+            &.Oral_cavity{
+              width:12px;
+              height:12px;
+              right: 65px;
+              top: 50px;
+              &:hover,&.hover{
+                background:url('~@/assets/images/people/Oral_cavity.svg') no-repeat center center;
+              }
+            }
+            &.Oesophagus{
+              width:5px;
+              height:70px;
+              right: 65px;
+              top: 63px;
+              &:hover,&.hover{
+                background:url('~@/assets/images/people/Oesophagus.svg') no-repeat center center;
+                background-size: 100% 100%;
+              }
+            }
+            &.Respiratory_tract{
+              width:5px;
+              height:70px;
+              right: 71px;
+              top: 63px;
+              &:hover,&.hover{
+                background:url('~@/assets/images/people/Respiratory_tract.svg') no-repeat center center;
+                background-size: 70px 100%;
+              }
+            }
+            &.Throat{
+              width:12px;
+              height:12px;
+              right: 194px;
+              top: 89px;
+              &:hover,&.hover{
+                background:url('~@/assets/images/people/Throat.svg') no-repeat center center;
+              }
+            }
+            &.Lung{
+              width:36px;
+              height:51px;
+              right: 200px;
+              top: 146px;
+              &:hover,&.hover{
+                background:url('~@/assets/images/people/Lung.svg') no-repeat center center;
+              }
+            }
+            &.Gastrointestinal_tract{
+              width:47px;
+              height:92px;
+              right: 177px;
+              top: 189px;
+              &:hover,&.hover{
+                background:url('~@/assets/images/people/Gastrointestinal_tract.svg') no-repeat center center;
+              }
+            }
+            &.Breast{
+              width:30px;
+              height:30px;
+              right: 161px;
+              top: 152px;
+              &:hover,&.hover{
+                background:url('~@/assets/images/people/Breast.svg') no-repeat center center;
+              }
+            }
+            &.Liver{
+              width:32px;
+              height:17px;
+              right: 168px;
+              top: 223px;
+              &:hover,&.hover{
+                background:url('~@/assets/images/people/Liver.svg') no-repeat center center;
+              }
+            }
+            &.Gallbladder{
+              width:46px;
+              height:14px;
+              right: 166px;
+              top: 229px;
+              &:hover,&.hover{
+                background:url('~@/assets/images/people/Gallbladder.svg') no-repeat center center;
+              }
+            }
+            &.Skin_and_soft_tissue{
+              width:41px;
+              height:240px;
+              right: 120px;
+              top: 118px;
+              &:hover,&.hover{
+                background:url('~@/assets/images/people/Skin_and_soft_tissue.svg') no-repeat center center;
+                background-size: 100% 100%;
+              }
+            }
+            &.Abdominal_cavity{
+              width:50px;
+              height:50px;
+              right: 50px;
+              top: 234px;
+              &:hover,&.hover{
+                background:url('~@/assets/images/people/Abdominal_cavity.svg') no-repeat center center;
+                background-size: 100% 100%;
+              }
+            }
+            &.Placenta{
+              width:21px;
+              height:14px;
+              right: 191px;
+              top: 270px;
+              &:hover,&.hover{
+                background:url('~@/assets/images/people/Placenta.svg') no-repeat center center;
+              }
+            }
+            &.Cervix{
+              width:37px;
+              height:22px;
+              right: 183px;
+              top: 286px;
+              &:hover,&.hover{
+                background:url('~@/assets/images/people/Cervix.svg') no-repeat center center;
+              }
+            }
+            &.Vagina{
+              width:5px;
+              height:20px;
+              right:199px;
+              top: 295px;
+              &:hover,&.hover{
+                background:url('~@/assets/images/people/Vagina.svg') no-repeat center center;
+                background-size: 100% 100%;
+              }
+            }
+            &.Urinary_tract{
+              width:20px;
+              height:14px;
+              right: 191px;
+              top: 298px;
+              &:hover,&.hover{
+                background:url('~@/assets/images/people/Urinary_tract.svg') no-repeat center center;
+              }
+            }
+            &.Bloodstream{
+              width:29px;
+              height:251px;
+              right: 162px;
+              top: 294px;
+              &:hover,&.hover{
+                background:url('~@/assets/images/people/Bloodstream.svg') no-repeat center center;
+              }
+            }
+            &.Genitals{
+              width:21px;
+              height:14px;
+              right: 68px;
+              top: 284px;
+              &:hover,&.hover{
+                background:url('~@/assets/images/people/Genitals.svg') no-repeat center center;
+              }
+            }
+            &.Foot{
+              width:16px;
+              height:16px;
+              right: 210px;
+              top: 573px;
+              &:hover,&.hover{
+                background:url('~@/assets/images/people/Foot.svg') no-repeat center center;
+              }
+            }
+          }
+        }
+      }
+      .right-box{
+        width: 30%;
+        height: 620px;
+        float:left;
+        text-align:right;
+        .my-chart{
+          display:inline-block;
+          width:70%;
+          border-left:1px solid #CD9EC1;
+          border-bottom:1px solid #CD9EC1;
+          position:relative;
+          .origin{
+            font-size:12px;
+            color:#fff;
+            position: absolute;
+            left:-5px;
+            bottom:-20px;
+          }
+          .x-data{
+            position: absolute;
+            width:100%;
+            height:100%;
+            left:0;
+            bottom:0;
+            ul{
+              width:100%;
+              height:100%;
+              padding:0;
+              margin:0;
+              li{
+                float:left;
+                list-style:none;
+                width:32%;
+                height: 100%;
+                border-right:1px solid rgba(255,255,255,.24);
+                position: relative;
+                span{
+                  font-size:12px;
+                  color:#fff;
+                  position: absolute;
+                  right:-13px;
+                  bottom: -20px;
+                }
+              }
+            }
+          }
+          .y-data{
+            min-height: 10px;
+              ul{
+                padding:0;
+                margin:0;
+                li{
+                  width:100%;
+                  height:18px;
+                  list-style:none;
+                  position:relative;
+                  padding:4px 0;
+                  margin-bottom:8px;
+                  &:hover,&.hover{
+                    .value{
+                      .line{
+                        border:1px solid #ffffff;
+                        opacity: 1 !important;
+                      }
+                    }
+                    &.Central_nervous_system{
+                      .name{
+                        color:#64d0ff;
+                      }
+                      .value{
+                        .line{
+                          background:#64d0ff;
+                        }
+                      }
+                    }
+                    &.Respiratory_tract{
+                      .name{
+                        color:#4898ff;
+                      }
+                      .value{
+                        .line{
+                          background:#4898ff;
+                        }
+                      }
+                    }
+                    &.Oral_cavity{
+                      .name{
+                        color:#737cff;
+                      }
+                      .value{
+                        .line{
+                          background:#737cff;
+                        }
+                      }
+                    }
+                    &.Auditory_meatus{
+                      .name{
+                        color:#73d0ff;
+                      }
+                      .value{
+                        .line{
+                          background:#73d0ff;
+                        }
+                      }
+                    }
+                    &.Biofilm{
+                      .name{
+                        color:#589fff;
+                      }
+                      .value{
+                        .line{
+                          background:#589fff;
+                        }
+                      }
+                    }
+                    &.Gallbladder{
+                      .name{
+                        color:#eaa0ff;
+                      }
+                      .value{
+                        .line{
+                          background:#eaa0ff;
+                        }
+                      }
+                    }
+                    &.Lung{
+                      .name{
+                        color:#bc40e0;
+                      }
+                      .value{
+                        .line{
+                          background:#bc40e0;
+                        }
+                      }
+                    }
+                    &.Genitals{
+                      .name{
+                        color:#edb2e9;
+                      }
+                      .value{
+                        .line{
+                          background:#edb2e9;
+                        }
+                      }
+                    }
+                    &.Nasal_cavity{
+                      .name{
+                        color:#ff73f6;
+                      }
+                      .value{
+                        .line{
+                          background:#ff73f6;
+                        }
+                      }
+                    }
+                    &.Abdominal_cavity{
+                      .name{
+                        color:#ffb5a0;
+                      }
+                      .value{
+                        .line{
+                          background:#ffb5a0;
+                        }
+                      }
+                    }
+                    &.Throat{
+                      .name{
+                        color:#ff73a0;
+                      }
+                      .value{
+                        .line{
+                          background:#ff73a0;
+                        }
+                      }
+                    }
+                    &.Foot{
+                      .name{
+                        color:#ffd8d8;
+                      }
+                      .value{
+                        .line{
+                          background:#ffd8d8;
+                        }
+                      }
+                    }
+                    &.Vagina{
+                      .name{
+                        color:#ff6f6f;
+                      }
+                      .value{
+                        .line{
+                          background:#ff6f6f;
+                        }
+                      }
+                    }
+                    &.Eye{
+                      .name{
+                        color:#ff9f73;
+                      }
+                      .value{
+                        .line{
+                          background:#ff9f73;
+                        }
+                      }
+                    }
+                    &.Gastrointestinal_tract{
+                      .name{
+                        color:#ffbd7a;
+                      }
+                      .value{
+                        .line{
+                          background:#ffbd7a;
+                        }
+                      }
+                    }
+                    &.Cervix{
+                      .name{
+                        color:#ffbf4c;
+                      }
+                      .value{
+                        .line{
+                          background:#ffbf4c;
+                        }
+                      }
+                    }
+                    &.Urinary_tract{
+                      .name{
+                        color:#ffa658;
+                      }
+                      .value{
+                        .line{
+                          background:#ffa658;
+                        }
+                      }
+                    }
+                    &.Skin_and_soft_tissue{
+                      .name{
+                        color:#ffd07a;
+                      }
+                      .value{
+                        .line{
+                          background:#ffd07a;
+                        }
+                      }
+                    }
+                    &.Breast{
+                      .name{
+                        color:#ff4848;
+                      }
+                      .value{
+                        .line{
+                          background:#ff4848;
+                        }
+                      }
+                    }
+                    &.Bloodstream{
+                      .name{
+                        color:#ff6363;
+                      }
+                      .value{
+                        .line{
+                          background:#ff6363;
+                        }
+                      }
+                    }
+                    &.Placenta{
+                      .name{
+                        color:#9d79ff;
+                      }
+                      .value{
+                        .line{
+                          background:#9d79ff;
+                        }
+                      }
+                    }
+                    &.Oesophagus{
+                      .name{
+                        color:#ffbd7a;
+                      }
+                      .value{
+                        .line{
+                          background:#ffbd7a;
+                        }
+                      }
+                    }
+                    &.Biofilm{
+                      .name{
+                        color:#59a0ff;
+                      }
+                      .value{
+                        .line{
+                          background:#59a0ff;
+                        }
+                      }
+                    }
+                    &.Other{
+                      .name{
+                        color:#3780e2;
+                      }
+                      .value{
+                        .line{
+                          background:#3780e2;
+                        }
+                      }
+                    }
+                  }
+                  .name{
+                    font-size:12px;
+                    color:#fff;
+                    line-height:18px;
+                    position: absolute;
+                    width:150px;
+                    top:0;
+                    left:-155px;
+                  }
+                  .value{
+                    width:100%;
+                    height:10px;
+                    .line{
+                      display:block;
+                      height:100%;
+                      background:#fff;
+                      border-radius:0 24px 24px 0;
+                    }
+                  }
+                }
+              }
+          }
+        }
+      }
+    }
+    .intro-box{
+      padding:0 40px 40px 40px;
+      background:#fff;
+      @media screen and (max-width: 1400px){
+        padding:0px 20px 40px 20px;
+      }
+      .box{
+        max-width: 1920px;
+        margin: 0 auto;
+      }
+      h3{
+        font-size:24px;
+        line-height:28px;
+        color:#222222;
+        margin-bottom:20px;
+      }
+      .content{
+        font-size:18px;
+        line-height:24px;
+        color:rgba(0,0,0,.54);
+      }
+    }
+  }
+</style>
+
+
+
+// WEBPACK FOOTER //
+// src/components/Home.vue
